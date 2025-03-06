@@ -1,0 +1,10 @@
+version: '3'
+
+services:
+  pdf-extractor:
+    build: .
+    volomes:
+      - ${PDF_SOURCE_DIR:-/~/Documents}:/app/documents
+      - ${PDF_SOURCE_DIR:-/~/Documents/Note/obsidian/書籍/covers}:/app/output
+    environment:
+      - PYTHONUNBUFFERED=1
