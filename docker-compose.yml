@@ -4,7 +4,7 @@ services:
   pdf-extractor:
     build: .
     volomes:
-      - ${PDF_SOURCE_DIR:-/~/Documents}:/app/documents
-      - ${PDF_SOURCE_DIR:-/~/Documents/Note/obsidian/書籍/covers}:/app/output
+      - ${PDF_SOURCE_DIR}:/app/documents
+      - ${PDF_OUTPUT_DIR:}:/app/output
     environment:
       - PYTHONUNBUFFERED=1
