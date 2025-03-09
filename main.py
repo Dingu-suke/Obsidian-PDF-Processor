@@ -8,7 +8,7 @@ from PIL import Image, ImageTk
 import shutil
 import threading
 from pathlib import Path
-
+import re
 
 class PDFProcessor:
     """PDFの処理を担当するクラス"""
@@ -23,14 +23,27 @@ class PDFProcessor:
             pdf_filename = os.path.basename(pdf_path)
             pdf_name_without_ext = os.path.splitext(pdf_filename)[0]
             
+            # サブディレクトリを作成
+            subdir_name = "book_covers"
+            subdir_path = os.path.join(output_dir, subdir_name)
+            
+            # サブディレクトリが存在しない場合は作成
+            if not os.path.exists(subdir_path):
+                os.makedirs(subdir_path)
+                if self.logger:
+                    self.logger.log(f"表紙画像用サブディレクトリを作成しました: {subdir_path}")
+            
+            # ファイル名の空白をアンダースコアに置換してObsidianでのリンク問題を回避
+            output_filename = f"{pdf_name_without_ext}.png".replace(" ", "_")
+            
             # 出力ファイルパスを作成
-            output_path = os.path.join(output_dir, f"{pdf_name_without_ext}.png")
+            output_path = os.path.join(subdir_path, output_filename)
             
             # すでに画像が存在する場合はスキップ
             if os.path.exists(output_path):
                 if self.logger:
                     self.logger.log(f"画像すでに存在します: {output_path}")
-                return output_path
+                return output_path, subdir_name
             
             # PDFの1ページ目を画像に変換
             images = pdf2image.convert_from_path(
@@ -45,15 +58,15 @@ class PDFProcessor:
                 images[0].save(output_path, "PNG")
                 if self.logger:
                     self.logger.log(f"表紙画像を保存しました: {output_path}")
-                return output_path
+                return output_path, subdir_name
             else:
                 if self.logger:
                     self.logger.log(f"エラー: PDFから画像を抽出できませんでした: {pdf_path}")
-                return None
+                return None, None
         except Exception as e:
             if self.logger:
                 self.logger.log(f"エラー: {str(e)}")
-            return None
+            return None, None
 
 
 class SymbolicLinkCreator:
@@ -63,14 +76,25 @@ class SymbolicLinkCreator:
         self.logger = logger
         self.created_links = []
     
-    def create_symlink(self, source_path, output_dir):
+    def create_symlink(self, source_path, output_dir, subdir_name="book_covers"):
         """シンボリックリンクを作成する"""
         try:
             # ファイル名を取得
             filename = os.path.basename(source_path)
+            # ファイル名の空白をアンダースコアに置換
+            filename_no_spaces = filename.replace(" ", "_")
             
-            # 出力ファイルパスを作成
-            output_path = os.path.join(output_dir, filename)
+            # サブディレクトリを作成
+            subdir_path = os.path.join(output_dir, subdir_name)
+            
+            # サブディレクトリが存在しない場合は作成
+            if not os.path.exists(subdir_path):
+                os.makedirs(subdir_path)
+                if self.logger:
+                    self.logger.log(f"PDFリンク用サブディレクトリを作成しました: {subdir_path}")
+            
+            # 出力ファイルパスを作成（スペースをアンダースコアに置換した名前を使用）
+            output_path = os.path.join(subdir_path, filename_no_spaces)
             
             # すでに存在する場合は削除
             if os.path.exists(output_path):
@@ -124,6 +148,9 @@ class MarkdownGenerator:
             
             markdown_lines = []
             
+            # 画像サブディレクトリ名
+            image_subdir = "book_covers"
+            
             if use_table:
                 # PDFファイルの数を4の倍数になるように調整
                 while len(pdf_files) % 4 != 0:
@@ -144,7 +171,9 @@ class MarkdownGenerator:
                         if pdf_file:
                             pdf_filename = os.path.basename(pdf_file)
                             pdf_name_without_ext = os.path.splitext(pdf_filename)[0]
-                            image_path = f"{pdf_name_without_ext}.png"
+                            # ファイル名の空白をアンダースコアに置換してObsidianでのリンク問題を回避
+                            image_filename = f"{pdf_name_without_ext}.png".replace(" ", "_")
+                            image_path = f"{image_subdir}/{image_filename}"
                             symlink_path = pdf_filename
                             image_row += f" [![]({image_path})]({symlink_path}) |"
                         else:
@@ -167,7 +196,7 @@ class MarkdownGenerator:
                     if pdf_file:
                         pdf_filename = os.path.basename(pdf_file)
                         pdf_name_without_ext = os.path.splitext(pdf_filename)[0]
-                        image_path = f"{pdf_name_without_ext}.png"
+                        image_path = f"{image_subdir}/{pdf_name_without_ext}.png"
                         symlink_path = pdf_filename
                         line = f"[![]({image_path})]({symlink_path})"
                         if show_title:
@@ -259,7 +288,7 @@ class MainApplication(tk.Tk):
         super().__init__()
         
         self.title("Obsidian PDF Processor")
-        self.geometry("800x1200")
+        self.geometry("800x700")
         self.minsize(600, 500)
         
         # アプリケーション設定
@@ -507,7 +536,7 @@ class MainApplication(tk.Tk):
         for pdf_file in self.input_files:
             try:
                 # 表紙画像を抽出
-                self.pdf_processor.extract_cover_image(pdf_file, image_output_dir)
+                _, _ = self.pdf_processor.extract_cover_image(pdf_file, image_output_dir)
             except Exception as e:
                 self.logger.log(f"エラー: 画像抽出中にエラーが発生しました: {str(e)}")
         
@@ -584,7 +613,7 @@ class MainApplication(tk.Tk):
         for pdf_file in self.input_files:
             try:
                 # 表紙画像を抽出
-                self.pdf_processor.extract_cover_image(pdf_file, image_output_dir)
+                _, _ = self.pdf_processor.extract_cover_image(pdf_file, image_output_dir)
                 
                 # シンボリックリンクを作成
                 self.symlink_creator.create_symlink(pdf_file, symlink_output_dir)
