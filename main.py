@@ -16,7 +16,7 @@ class PDFProcessor:
     def __init__(self, logger=None):
         self.logger = logger
     
-    def extract_cover_image(self, pdf_path, output_dir, dpi=150):
+    def extract_cover_image(self, pdf_path, output_dir, dpi=150, subdir_name="book_covers"):
         """PDFの表紙（1ページ目）を画像として抽出する"""
         try:
             # ファイル名（拡張子なし）を取得
@@ -24,7 +24,6 @@ class PDFProcessor:
             pdf_name_without_ext = os.path.splitext(pdf_filename)[0]
             
             # サブディレクトリを作成
-            subdir_name = "book_covers"
             subdir_path = os.path.join(output_dir, subdir_name)
             
             # サブディレクトリが存在しない場合は作成
@@ -33,8 +32,8 @@ class PDFProcessor:
                 if self.logger:
                     self.logger.log(f"表紙画像用サブディレクトリを作成しました: {subdir_path}")
             
-            # ファイル名の空白をアンダースコアに置換してObsidianでのリンク問題を回避
-            output_filename = f"{pdf_name_without_ext}.png".replace(" ", "_")
+            # ファイル名のスペース（半角・全角）をアンダースコアに置換
+            output_filename = re.sub(r'[\s\u3000]+', '_', f"{pdf_name_without_ext}.png")
             
             # 出力ファイルパスを作成
             output_path = os.path.join(subdir_path, output_filename)
@@ -81,8 +80,8 @@ class SymbolicLinkCreator:
         try:
             # ファイル名を取得
             filename = os.path.basename(source_path)
-            # ファイル名の空白をアンダースコアに置換
-            filename_no_spaces = filename.replace(" ", "_")
+            # ファイル名のスペース（半角・全角）をアンダースコアに置換
+            filename_no_spaces = re.sub(r'[\s\u3000]+', '_', filename)
             
             # サブディレクトリを作成
             subdir_path = os.path.join(output_dir, subdir_name)
@@ -135,7 +134,7 @@ class MarkdownGenerator:
     def __init__(self, logger=None):
         self.logger = logger
     
-    def generate_markdown(self, pdf_files, image_dir, symlink_dir, use_table=True, show_title=False):
+    def generate_markdown(self, pdf_files, image_dir, symlink_dir, use_table=True, show_title=False, subdir_name="book_covers"):
         """マークダウン文字列を生成する"""
         try:
             if not pdf_files:
@@ -149,7 +148,7 @@ class MarkdownGenerator:
             markdown_lines = []
             
             # 画像サブディレクトリ名
-            image_subdir = "book_covers"
+            image_subdir = subdir_name
             
             if use_table:
                 # PDFファイルの数を4の倍数になるように調整
@@ -171,10 +170,11 @@ class MarkdownGenerator:
                         if pdf_file:
                             pdf_filename = os.path.basename(pdf_file)
                             pdf_name_without_ext = os.path.splitext(pdf_filename)[0]
-                            # ファイル名の空白をアンダースコアに置換してObsidianでのリンク問題を回避
-                            image_filename = f"{pdf_name_without_ext}.png".replace(" ", "_")
+                            # ファイル名のスペース（半角・全角）をアンダースコアに置換
+                            image_filename = re.sub(r'[\s\u3000]+', '_', f"{pdf_name_without_ext}.png")
+                            pdf_filename_no_spaces = re.sub(r'[\s\u3000]+', '_', pdf_filename)
                             image_path = f"{image_subdir}/{image_filename}"
-                            symlink_path = pdf_filename
+                            symlink_path = f"{subdir_name}/{pdf_filename_no_spaces}"
                             image_row += f" [![]({image_path})]({symlink_path}) |"
                         else:
                             image_row += " |"
@@ -196,8 +196,11 @@ class MarkdownGenerator:
                     if pdf_file:
                         pdf_filename = os.path.basename(pdf_file)
                         pdf_name_without_ext = os.path.splitext(pdf_filename)[0]
-                        image_path = f"{image_subdir}/{pdf_name_without_ext}.png"
-                        symlink_path = pdf_filename
+                        # ファイル名のスペース（半角・全角）をアンダースコアに置換
+                        image_filename = re.sub(r'[\s\u3000]+', '_', f"{pdf_name_without_ext}.png")
+                        pdf_filename_no_spaces = re.sub(r'[\s\u3000]+', '_', pdf_filename)
+                        image_path = f"{image_subdir}/{image_filename}"
+                        symlink_path = f"{subdir_name}/{pdf_filename_no_spaces}"
                         line = f"[![]({image_path})]({symlink_path})"
                         if show_title:
                             line += f" {pdf_name_without_ext}"
@@ -219,6 +222,7 @@ class AppSettings:
             "input_path": "",
             "image_output_dir": "/obsidian/images/",
             "symlink_output_dir": "/obsidian/pdfs/",
+            "subdir_name": "book_covers",
             "use_table": True,
             "show_title": False
         }
@@ -259,6 +263,7 @@ class AppSettings:
             "input_path": "",
             "image_output_dir": "/obsidian/images/",
             "symlink_output_dir": "/obsidian/pdfs/",
+            "subdir_name": "book_covers",
             "use_table": True,
             "show_title": False
         }
@@ -288,7 +293,7 @@ class MainApplication(tk.Tk):
         super().__init__()
         
         self.title("Obsidian PDF Processor")
-        self.geometry("800x700")
+        self.geometry("800x1200")
         self.minsize(600, 500)
         
         # アプリケーション設定
@@ -299,6 +304,7 @@ class MainApplication(tk.Tk):
         self.input_var = tk.StringVar(value=self.settings.get_setting("input_path"))
         self.image_output_var = tk.StringVar(value=self.settings.get_setting("image_output_dir"))
         self.symlink_output_var = tk.StringVar(value=self.settings.get_setting("symlink_output_dir"))
+        self.subdir_var = tk.StringVar(value=self.settings.get_setting("subdir_name") or "book_covers")
         self.use_table_var = tk.BooleanVar(value=self.settings.get_setting("use_table"))
         self.show_title_var = tk.BooleanVar(value=self.settings.get_setting("show_title"))
         
@@ -349,6 +355,14 @@ class MainApplication(tk.Tk):
         ttk.Label(symlink_output_frame, text="リンク作成先:").pack(side=tk.LEFT)
         ttk.Button(symlink_output_frame, text="選択", command=self.select_symlink_output_dir).pack(side=tk.LEFT, padx=5)
         ttk.Entry(symlink_output_frame, textvariable=self.symlink_output_var).pack(side=tk.LEFT, fill=tk.X, expand=True)
+        
+        # サブディレクトリ名入力フィールド
+        subdir_frame = ttk.Frame(output_frame)
+        subdir_frame.pack(fill=tk.X, pady=2)
+        
+        ttk.Label(subdir_frame, text="サブディレクトリ名:").pack(side=tk.LEFT)
+        ttk.Entry(subdir_frame, textvariable=self.subdir_var).pack(side=tk.LEFT, fill=tk.X, expand=True)
+        ttk.Label(subdir_frame, text="※画像とPDFの両方に使用されます").pack(side=tk.LEFT, padx=5)
         
         # オプションセクション
         options_frame = ttk.LabelFrame(main_frame, text="オプション", padding=5)
@@ -454,6 +468,7 @@ class MainApplication(tk.Tk):
         # 設定を更新
         self.settings.set_setting("use_table", self.use_table_var.get())
         self.settings.set_setting("show_title", self.show_title_var.get())
+        self.settings.set_setting("subdir_name", self.subdir_var.get())
         
         # マークダウンプレビューを更新
         markdown = self.markdown_generator.generate_markdown(
@@ -461,7 +476,8 @@ class MainApplication(tk.Tk):
             self.image_output_var.get(),
             self.symlink_output_var.get(),
             self.use_table_var.get(),
-            self.show_title_var.get()
+            self.show_title_var.get(),
+            self.subdir_var.get()
         )
         
         self.markdown_preview.delete(1.0, tk.END)
@@ -473,7 +489,8 @@ class MainApplication(tk.Tk):
             if pdf_file:
                 symlink_path = os.path.join(
                     self.symlink_output_var.get(),
-                    os.path.basename(pdf_file)
+                    self.subdir_var.get(),
+                    re.sub(r'[\s\u3000]+', '_', os.path.basename(pdf_file))
                 )
                 self.symlink_preview.insert(tk.END, f"{symlink_path} -> {pdf_file}\n")
     
@@ -485,6 +502,7 @@ class MainApplication(tk.Tk):
         
         image_output_dir = self.image_output_var.get()
         symlink_output_dir = self.symlink_output_var.get()
+        subdir_name = self.subdir_var.get()
         
         # 出力ディレクトリが存在するか確認
         if not os.path.exists(image_output_dir):
@@ -513,6 +531,7 @@ class MainApplication(tk.Tk):
             return
         
         image_output_dir = self.image_output_var.get()
+        subdir_name = self.subdir_var.get()
         
         # 出力ディレクトリが存在するか確認
         if not os.path.exists(image_output_dir):
@@ -529,6 +548,7 @@ class MainApplication(tk.Tk):
     def _extract_images_only(self):
         """画像抽出のみを実行（別スレッド）"""
         image_output_dir = self.image_output_var.get()
+        subdir_name = self.subdir_var.get()
         
         self.logger.log("画像抽出を開始します...")
         
@@ -536,7 +556,7 @@ class MainApplication(tk.Tk):
         for pdf_file in self.input_files:
             try:
                 # 表紙画像を抽出
-                _, _ = self.pdf_processor.extract_cover_image(pdf_file, image_output_dir)
+                _, _ = self.pdf_processor.extract_cover_image(pdf_file, image_output_dir, subdir_name=subdir_name)
             except Exception as e:
                 self.logger.log(f"エラー: 画像抽出中にエラーが発生しました: {str(e)}")
         
@@ -554,6 +574,7 @@ class MainApplication(tk.Tk):
             return
         
         symlink_output_dir = self.symlink_output_var.get()
+        subdir_name = self.subdir_var.get()
         
         # 出力ディレクトリが存在するか確認
         if not os.path.exists(symlink_output_dir):
@@ -570,6 +591,7 @@ class MainApplication(tk.Tk):
     def _create_symlinks_only(self):
         """シンボリックリンク作成のみを実行（別スレッド）"""
         symlink_output_dir = self.symlink_output_var.get()
+        subdir_name = self.subdir_var.get()
         
         self.logger.log("シンボリックリンク作成を開始します...")
         
@@ -580,7 +602,7 @@ class MainApplication(tk.Tk):
         for pdf_file in self.input_files:
             try:
                 # シンボリックリンクを作成
-                self.symlink_creator.create_symlink(pdf_file, symlink_output_dir)
+                self.symlink_creator.create_symlink(pdf_file, symlink_output_dir, subdir_name=subdir_name)
             except Exception as e:
                 self.logger.log(f"エラー: シンボリックリンク作成中にエラーが発生しました: {str(e)}")
         
@@ -603,6 +625,7 @@ class MainApplication(tk.Tk):
         """ファイル処理を実行（別スレッド）"""
         image_output_dir = self.image_output_var.get()
         symlink_output_dir = self.symlink_output_var.get()
+        subdir_name = self.subdir_var.get()
         
         self.logger.log("処理を開始します...")
         
@@ -613,10 +636,10 @@ class MainApplication(tk.Tk):
         for pdf_file in self.input_files:
             try:
                 # 表紙画像を抽出
-                _, _ = self.pdf_processor.extract_cover_image(pdf_file, image_output_dir)
+                _, _ = self.pdf_processor.extract_cover_image(pdf_file, image_output_dir, subdir_name=subdir_name)
                 
                 # シンボリックリンクを作成
-                self.symlink_creator.create_symlink(pdf_file, symlink_output_dir)
+                self.symlink_creator.create_symlink(pdf_file, symlink_output_dir, subdir_name=subdir_name)
             except Exception as e:
                 self.logger.log(f"エラー: ファイル処理中にエラーが発生しました: {str(e)}")
         
@@ -649,6 +672,7 @@ class MainApplication(tk.Tk):
             self.input_var.set(self.settings.get_setting("input_path"))
             self.image_output_var.set(self.settings.get_setting("image_output_dir"))
             self.symlink_output_var.set(self.settings.get_setting("symlink_output_dir"))
+            self.subdir_var.set(self.settings.get_setting("subdir_name") or "book_covers")
             self.use_table_var.set(self.settings.get_setting("use_table"))
             self.show_title_var.set(self.settings.get_setting("show_title"))
             
