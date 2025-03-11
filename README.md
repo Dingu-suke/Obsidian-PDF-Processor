@@ -104,7 +104,7 @@ obsidian_pdf_processor/
 .env ファイルを作成し、以下のように設定してください。
 ```
 PDF_SOURCE_DIR=${HOME}/Documents
-PDF_OUTPUT_DIR=${HOME}/Note/obsidian/書籍/covers
+PDF_OUTPUT_DIR=${HOME}/Note/obsidian/書籍
 ```
 `PDF_OUTPUT_DIR=${HOME}` は、obsidian があるディレクトリを指定してください。
 
