@@ -1,8 +1,8 @@
 {
-  "input_path": "/Users/dingu/Documents/Ruby",
+  "input_path": "",
   "image_output_dir": "/Users/dingu/Note/obsidian/03_assets/本表紙",
-  "symlink_output_dir": "/Users/dingu/Note/obsidian",
-  "subdir_name": "Ruby",
+  "symlink_output_dir": "/Users/dingu/Note/obsidian/書籍",
+  "subdir_name": "book_covers",
   "use_table": true,
   "show_title": false
 }

@@ -392,32 +392,37 @@ class MainApplication(tk.Tk):
         
         # プレビューセクション
         preview_frame = ttk.LabelFrame(main_frame, text="プレビュー", padding=5)
+        # 高さを制限し、拡張を少なめに設定
         preview_frame.pack(fill=tk.BOTH, expand=True, pady=5)
-        
+
         preview_notebook = ttk.Notebook(preview_frame)
         preview_notebook.pack(fill=tk.BOTH, expand=True)
-        
+
         # マークダウンプレビュータブ
         markdown_preview_frame = ttk.Frame(preview_notebook)
         preview_notebook.add(markdown_preview_frame, text="マークダウンプレビュー")
-        
-        self.markdown_preview = scrolledtext.ScrolledText(markdown_preview_frame, wrap=tk.WORD)
+
+        # 高さを行数で指定（少なめに設定）
+        self.markdown_preview = scrolledtext.ScrolledText(markdown_preview_frame, wrap=tk.WORD, height=15)
         self.markdown_preview.pack(fill=tk.BOTH, expand=True)
-        
+
         # シンボリックリンクパス一覧タブ
         symlink_preview_frame = ttk.Frame(preview_notebook)
         preview_notebook.add(symlink_preview_frame, text="シンボリックリンクパス一覧")
-        
-        self.symlink_preview = scrolledtext.ScrolledText(symlink_preview_frame, wrap=tk.WORD)
+
+        # こちらも同じ高さに設定
+        self.symlink_preview = scrolledtext.ScrolledText(symlink_preview_frame, wrap=tk.WORD, height=15)
         self.symlink_preview.pack(fill=tk.BOTH, expand=True)
-        
+
         # ログセクション
         log_frame = ttk.LabelFrame(main_frame, text="ログ", padding=5)
-        log_frame.pack(fill=tk.X, pady=5)
-        
-        self.log_text = scrolledtext.ScrolledText(log_frame, height=5, wrap=tk.WORD)
-        self.log_text.pack(fill=tk.BOTH)
-        self.log_text.configure(state="disabled")
+        # 高さを制限せず、拡張をより多めに設定
+        log_frame.pack(fill=tk.BOTH, expand=True, pady=5)
+
+        # ログテキストボックスの高さを増やす
+        self.log_text = scrolledtext.ScrolledText(log_frame, height=10, wrap=tk.WORD)
+        self.log_text.pack(fill=tk.BOTH, expand=True)
+        self.log_text.configure(state="disabled")        
         
         # ボタンセクション
         button_frame = ttk.Frame(main_frame)
