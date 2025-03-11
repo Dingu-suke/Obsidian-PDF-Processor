@@ -4,6 +4,9 @@ Obsidian PDF Processorは、PDFの書籍管理をObsidianで簡単に行うた�
 
 https://github.com/user-attachments/assets/96c5915a-21b6-4417-b992-c2430708a2f3
 
+## 環境
+MacOS 15
+
 ## 機能
 
 - PDFファイルの表紙画像を自動抽出
