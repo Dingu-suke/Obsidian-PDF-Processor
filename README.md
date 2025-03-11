@@ -2,9 +2,7 @@
 
 Obsidian PDF Processorは、PDFの書籍管理をObsidianで簡単に行うためのツールです。PDFファイルの表紙画像を自動的に抽出し、シンボリックリンクを作成して、Obsidianでの表示に最適化されたマークダウン形式の一覧を生成します。
 
-<video src="動画のパス/ファイル名.mp4" autoplay></video>
-[![Image from Gyazo](https://i.gyazo.com/910ab2427aa4177cf9da6ed90299c1db.jpg)](https://gyazo.com/910ab2427aa4177cf9da6ed90299c1db)
-<video src="obsidian_for_tool.mov" autoplay muted controls></video>
+https://github.com/user-attachments/assets/33cd165b-87cc-4b9d-a1bd-f8328c811c6b
 
 ## 機能
 
